@@ -1,4 +1,6 @@
 using backend;
+using MessagePack;
+using MessagePack.Resolvers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,20 +13,28 @@ builder.Services.AddCors(options =>
         {
             builder.WithOrigins("http://localhost:5173") // Allow your React app's origin
                 .AllowAnyMethod()
-                .AllowAnyHeader();
+                .AllowAnyHeader()
+                .AllowCredentials();
         });
 });
+
+
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true;
+}).AddJsonProtocol();
 
 var app = builder.Build();
 
 app.UseCors("AllowSpecificOrigin");
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseHttpsRedirection();
 
 var games = new Dictionary<string, Game>();
 
@@ -65,5 +75,7 @@ app.MapPost("api/join-game", (JoinGameRequest request) =>
 });
 
 app.UseHttpsRedirection();
+
+app.MapHub<GameHub>("/gameHub");
 
 app.Run();

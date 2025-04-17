@@ -1,19 +1,63 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 import './Home.css';
+
+import { startConnection, registerHandler, getConnection } from './connection';
+
 
 function Home() {
     const [username, setUsername] = useState('');
     const [error, setError] = useState('');
     const [gameId, setGameId] = useState('');
 
+    useEffect(() => {
+        const initialize = async () => {
+            try {
+                await startConnection();
+            } catch (error) { }
+        };
+        initialize();
+    }, [])
+
+    const handleRegister = async () => {
+        if (!username) {
+            setError("Username is required");
+            return;
+        }
+        try {
+            const connection = getConnection();
+
+            const registrationPromise = new Promise((resolve, reject) => {
+                const unregister = registerHandler("RegisterSuccessful", () => {
+                  unregister(); // Remove the handler after it fires.
+                  resolve(true);
+                });
+                // Optionally add a timeout.
+                setTimeout(() => {
+                  unregister();
+                  reject(new Error("Registration timed out"));
+                }, 5000);
+              });
+
+            await connection.invoke("RegisterUser", { Username: username });
+            // Wait for the "RegisterSuccessful" event from the server.
+            await registrationPromise;
+        } catch (err) {
+            console.error("Registration error:", err);
+            setError("Registration failed!");
+            throw err; // Optional: rethrow if you need to handle it in handleCreateGame.
+        }
+    }
+
     const handleCreateGame = async () => {
         if (!username) {
             setError('Username is required');
             return;
         }
+
+        await handleRegister();
 
         try {
             const response = await fetch('https://localhost:7008/api/create-game', {
