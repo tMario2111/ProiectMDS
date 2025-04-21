@@ -19,10 +19,7 @@ builder.Services.AddCors(options =>
 });
 
 
-builder.Services.AddSignalR(options =>
-{
-    options.EnableDetailedErrors = true;
-}).AddJsonProtocol();
+builder.Services.AddSignalR(options => { options.EnableDetailedErrors = true; }).AddJsonProtocol();
 
 var app = builder.Build();
 
@@ -36,8 +33,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var games = new Dictionary<string, Game>();
-
 app.MapPost("/api/create-game", (CreateGameRequest request) =>
 {
     if (string.IsNullOrEmpty(request.Username))
@@ -47,10 +42,12 @@ app.MapPost("/api/create-game", (CreateGameRequest request) =>
 
     var gameId = Game.GenerateGameCode();
 
-    games[gameId] = new Game
+    GameHub.Games[gameId] = new Game
     {
+        Code = gameId,
         WhiteUsername = request.Username,
-        BlackUsername = null
+        BlackUsername = null,
+        GameStarted = false,
     };
 
     var response = new CreateGameResponse
@@ -64,12 +61,24 @@ app.MapPost("/api/create-game", (CreateGameRequest request) =>
 app.MapPost("api/join-game", (JoinGameRequest request) =>
 {
     if (string.IsNullOrEmpty(request.Username))
-    {
         return Results.BadRequest("User name is required");
+
+    if (!GameHub.Games.ContainsKey(request.GameId))
+        return Results.NotFound();
+
+    var game = GameHub.Games[request.GameId];
+
+    if (game.WhiteUsername is not null && game.BlackUsername is not null ||
+        game.GameStarted)
+    {
+        return Results.Conflict();
     }
 
-    if (!games.ContainsKey(request.GameId))
-        return Results.NotFound();
+    // Hardcoded for black
+    GameHub.Games[request.GameId].BlackUsername = request.Username;
+    GameHub.Games[request.GameId].GameStarted = true;
+    
+    
 
     return Results.Ok();
 });

@@ -2,6 +2,8 @@
 
 public class Game
 {
+    public string? Code;
+    
     public string? WhiteUsername;
     public string? BlackUsername;
 
