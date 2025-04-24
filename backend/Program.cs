@@ -1,9 +1,11 @@
 using backend;
 using MessagePack;
 using MessagePack.Resolvers;
+using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddSingleton<GameStateService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddCors(options =>
@@ -35,14 +37,21 @@ app.UseHttpsRedirection();
 
 app.MapPost("/api/create-game", (CreateGameRequest request) =>
 {
+    var gameStateService = app.Services.GetRequiredService<GameStateService>();
+
     if (string.IsNullOrEmpty(request.Username))
     {
         return Results.BadRequest("User name is required");
     }
 
+    if (!gameStateService.UsernameConnection.ContainsKey(request.Username))
+    {
+        return Results.BadRequest("User must register via the hub first");
+    }
+
     var gameId = Game.GenerateGameCode();
 
-    GameHub.Games[gameId] = new Game
+    gameStateService.Games[gameId] = new Game
     {
         Code = gameId,
         WhiteUsername = request.Username,
@@ -58,27 +67,40 @@ app.MapPost("/api/create-game", (CreateGameRequest request) =>
     return Results.Ok(response);
 });
 
-app.MapPost("api/join-game", (JoinGameRequest request) =>
+app.MapPost("api/join-game", async (JoinGameRequest request, IHubContext<GameHub> hubContext) =>
 {
+    var gameStateService = app.Services.GetRequiredService<GameStateService>();
+
     if (string.IsNullOrEmpty(request.Username))
-        return Results.BadRequest("User name is required");
+        return Results.BadRequest("Username is required");
 
-    if (!GameHub.Games.ContainsKey(request.GameId))
-        return Results.NotFound();
+    if (!gameStateService.Games.ContainsKey(request.GameId))
+        return Results.NotFound("Game does not exist");
 
-    var game = GameHub.Games[request.GameId];
+    var game = gameStateService.Games[request.GameId];
 
     if (game.WhiteUsername is not null && game.BlackUsername is not null ||
         game.GameStarted)
     {
-        return Results.Conflict();
+        return Results.Conflict("Game is already started");
     }
 
     // Hardcoded for black
-    GameHub.Games[request.GameId].BlackUsername = request.Username;
-    GameHub.Games[request.GameId].GameStarted = true;
-    
-    
+    gameStateService.Games[request.GameId].BlackUsername = request.Username;
+    gameStateService.Games[request.GameId].GameStarted = true;
+
+    if (gameStateService.UsernameConnection.TryGetValue(game.WhiteUsername!, out var whiteConnId) &&
+        gameStateService.UsernameConnection.TryGetValue(game.BlackUsername!, out var blackConnId))
+    {
+        await hubContext.Groups.AddToGroupAsync(whiteConnId, game.Code!);
+        await hubContext.Groups.AddToGroupAsync(blackConnId, game.Code!);
+
+        await hubContext.Clients.Group(game.Code!).SendAsync("GameStart");
+    }
+    else
+    {
+        return Results.BadRequest("Internal error (oops)");
+    }
 
     return Results.Ok();
 });

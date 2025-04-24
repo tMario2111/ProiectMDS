@@ -39,9 +39,16 @@ function Home() {
             const connection = getConnection();
 
             const registrationPromise = new Promise((resolve, reject) => {
-                const unregister = registerHandler("RegisterSuccessful", () => {
-                    unregister();
+                const unregisterSuccess = registerHandler("RegisterSuccessful", () => {
+                    unregisterSuccess();
+                    unregisterError();
                     resolve(true);
+                });
+
+                const unregisterError = registerHandler("Error", (errorMessage) => {
+                    unregisterSuccess();
+                    unregisterError();
+                    reject(new Error(errorMessage));
                 });
             });
 
@@ -61,7 +68,7 @@ function Home() {
             setError('Username is required');
             return;
         }
-
+        
         await handleRegisterToHub();
 
         try {
@@ -95,7 +102,7 @@ function Home() {
             setError("Game code is required");
             return;
         }
-
+        
         await handleRegisterToHub();
 
         try {

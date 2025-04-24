@@ -6,27 +6,33 @@ namespace backend;
 
 public class GameHub : Hub
 {
-    private static readonly ConcurrentDictionary<string, string> UsernameConnection = new();
-    private static readonly ConcurrentDictionary<string, string> ConnectionUsername = new();
+    private readonly GameStateService _gameState;
 
-    public static readonly Dictionary<string, Game> Games = new();
+    public GameHub(GameStateService gameState)
+    {
+        _gameState = gameState;
+    }
 
     public async Task RegisterUser(RegisterMessage message)
     {
         var username = message.Username;
+        
+        if (_gameState.UsernameConnection.ContainsKey(username))
+        {
+            if (_gameState.UsernameConnection[username] != Context.ConnectionId)
+            {
+                await Clients.Caller.SendAsync("Error", "Username already exists");
+                return;
+            }
+        }
 
-        // TODO: Check if username already exists
-        UsernameConnection.AddOrUpdate(username, Context.ConnectionId, (key, oldValue) => Context.ConnectionId);
-        ConnectionUsername.AddOrUpdate(Context.ConnectionId, username, (key, oldValue) => username);
-
+        _gameState.AddUser(username, Context.ConnectionId);
         await Clients.Caller.SendAsync("RegisterSuccessful", new RegisterSuccessfulMessage());
     }
 
-    public async Task NotifyGameStart(Game game)
+    public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        await Groups.AddToGroupAsync(UsernameConnection[game.WhiteUsername!], game.Code!);
-        await Groups.AddToGroupAsync(UsernameConnection[game.BlackUsername!], game.Code!);
-
-        await Clients.Group(game.Code!).SendAsync("GameStart");
+        _gameState.RemoveUser(Context.ConnectionId);
+        await base.OnDisconnectedAsync(exception);
     }
 }
