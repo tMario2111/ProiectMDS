@@ -1,5 +1,4 @@
 import { HubConnectionBuilder, JsonHubProtocol } from '@microsoft/signalr';
-import { MessagePackHubProtocol } from '@microsoft/signalr-protocol-msgpack';
 
 let connection = null;
 let connectionPromise = null;
@@ -17,6 +16,7 @@ export const startConnection = async () => {
         try {
             await connection.start();
             console.log("Connected to hub");
+            console.log(connection.connectionId);
             return connection;
         } catch (err) {
             console.error('Connection failed:', err);

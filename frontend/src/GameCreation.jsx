@@ -1,15 +1,25 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import {registerHandler} from "./connection.js";
 
 function GameCreation() {
     const { code } = useParams();
+
+    useEffect(() => {
+        registerHandler("GameStart", () => {
+            console.log("Game started! yay");
+
+            registerHandler("GameStart", () => {
+            });
+        });
+    }, [])
 
     return <>
         <div class="center d-flex flex-column justify-content-center align-items-center">
             <h1 class="mb-5">Create a game</h1>
             <p>Game code: {code}</p>
             <p>Link to join game: <a
-                href='http://localhost:5173/game/join/{code}'>http://localhost:5173/game/join/{code}</a></p>
+                href={`http://localhost:5173/game/join/${code}`}>http://localhost:5173/game/join/{code}</a></p>
         </div>
     </>
 }

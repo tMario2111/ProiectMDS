@@ -81,26 +81,11 @@ app.MapPost("api/join-game", async (JoinGameRequest request, IHubContext<GameHub
 
     if (game.WhiteUsername is not null && game.BlackUsername is not null ||
         game.GameStarted)
-    {
         return Results.Conflict("Game is already started");
-    }
 
     // Hardcoded for black
     gameStateService.Games[request.GameId].BlackUsername = request.Username;
     gameStateService.Games[request.GameId].GameStarted = true;
-
-    if (gameStateService.UsernameConnection.TryGetValue(game.WhiteUsername!, out var whiteConnId) &&
-        gameStateService.UsernameConnection.TryGetValue(game.BlackUsername!, out var blackConnId))
-    {
-        await hubContext.Groups.AddToGroupAsync(whiteConnId, game.Code!);
-        await hubContext.Groups.AddToGroupAsync(blackConnId, game.Code!);
-
-        await hubContext.Clients.Group(game.Code!).SendAsync("GameStart");
-    }
-    else
-    {
-        return Results.BadRequest("Internal error (oops)");
-    }
 
     return Results.Ok();
 });

@@ -24,7 +24,6 @@ function Home() {
         registerHandler("GameStart", () => {
             console.log("Game started! yay");
             
-            // Unregister the handler
             registerHandler("GameStart", () => {
             });
         });
@@ -85,6 +84,10 @@ function Home() {
             }
 
             const data = await response.json();
+
+            const connection = getConnection();
+            await connection.invoke("JoinGameGroup", gameId);
+            
             setGameId(data.gameId);
             window.location.href = `/game/create/${data.gameId}`;
         } catch (error) {
@@ -118,6 +121,9 @@ function Home() {
                 console.log(response.status);
                 throw new Error("Game not found");
             }
+
+            const connection = getConnection();
+            await connection.invoke("JoinGameGroup", gameId);
         } catch (error) {
             setError(error.message);
         }

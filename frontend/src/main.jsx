@@ -6,10 +6,19 @@ import './index.css'
 import App from './App.jsx'
 import Home from './Home.jsx'
 import GameCreation from './GameCreation.jsx';
+import {startConnection} from "./connection.js";
 
 function GameNotFound() {
   return <h1>Could not find game</h1>
 }
+
+const initialize = async () => {
+    try {
+        await startConnection();
+    } catch (error) {
+    }
+};
+initialize();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

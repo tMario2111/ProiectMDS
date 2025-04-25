@@ -29,6 +29,29 @@ public class GameHub : Hub
         _gameState.AddUser(username, Context.ConnectionId);
         await Clients.Caller.SendAsync("RegisterSuccessful", new RegisterSuccessfulMessage());
     }
+    
+    public async Task JoinGameGroup(string gameId)
+    {
+        if (!_gameState.ConnectionUsername.TryGetValue(Context.ConnectionId, out var username))
+        {
+            await Clients.Caller.SendAsync("Error", "Register first");
+            return;
+        }
+
+        if (!_gameState.Games.TryGetValue(gameId, out var game) || 
+            (game.WhiteUsername != username && game.BlackUsername != username))
+        {
+            await Clients.Caller.SendAsync("Error", "Invalid game or player");
+            return;
+        }
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
+    
+        if (game.WhiteUsername != null && game.BlackUsername != null)
+        {
+            await Clients.Group(gameId).SendAsync("GameStart");
+        }
+    }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
