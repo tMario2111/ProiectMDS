@@ -61,6 +61,43 @@ public class GameHub : Hub
             await Clients.Group(gameId).SendAsync("GameStart");
         }
     }
+    
+    // TODO: This needs server-side validation
+    public async Task MakeMove(MakeMoveMessage move)
+    {
+        if (!_gameState.ConnectionUsername.TryGetValue(Context.ConnectionId, out var username))
+        {
+            await Clients.Caller.SendAsync("Error", "Register first");
+            return;
+        }
+
+        if (move.GameCode is null)
+        {
+            await Clients.Caller.SendAsync("Error", "Game code is null");
+            return;
+        }
+
+        if (!_gameState.Games.TryGetValue(move.GameCode, out var game))
+        {
+            await Clients.Caller.SendAsync("Error", "Game not found");
+            return;
+        }
+
+        if (game.WhiteUsername != username && game.BlackUsername != username)
+        {
+            await Clients.Caller.SendAsync("Error", "Can't make a move in a game you are not part of");
+            return;
+        }
+
+        var response = new GetMoveMessage()
+        {
+            Color = game.WhiteUsername == username ? "white" : "black",
+            SourceSquare = move.SourceSquare,
+            DestinationSquare = move.DestinationSquare,
+        };
+
+        await Clients.Group(move.GameCode).SendAsync("GetMove", response);
+    }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
