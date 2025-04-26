@@ -38,3 +38,4 @@ export const registerHandler = (methodName, callback) => {
     return () => conn.off(methodName, callback);
 };
 
+console.log(`This only runs once (I hope): ${Date.now()}ms`);

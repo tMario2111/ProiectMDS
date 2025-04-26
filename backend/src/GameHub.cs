@@ -16,7 +16,7 @@ public class GameHub : Hub
     public async Task RegisterUser(RegisterMessage message)
     {
         var username = message.Username;
-        
+
         if (_gameState.UsernameConnection.ContainsKey(username))
         {
             if (_gameState.UsernameConnection[username] != Context.ConnectionId)
@@ -29,7 +29,8 @@ public class GameHub : Hub
         _gameState.AddUser(username, Context.ConnectionId);
         await Clients.Caller.SendAsync("RegisterSuccessful", new RegisterSuccessfulMessage());
     }
-    
+
+    // TODO: Maybe solve the double "GameStart" message
     public async Task JoinGameGroup(string gameId)
     {
         if (!_gameState.ConnectionUsername.TryGetValue(Context.ConnectionId, out var username))
@@ -38,7 +39,7 @@ public class GameHub : Hub
             return;
         }
 
-        if (!_gameState.Games.TryGetValue(gameId, out var game) || 
+        if (!_gameState.Games.TryGetValue(gameId, out var game) ||
             (game.WhiteUsername != username && game.BlackUsername != username))
         {
             await Clients.Caller.SendAsync("Error", "Invalid game or player");
@@ -46,8 +47,16 @@ public class GameHub : Hub
         }
 
         await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
-    
-        if (game.WhiteUsername != null && game.BlackUsername != null)
+
+        // TODO: Would be really great to have some logs
+        Console.WriteLine(Context.ConnectionId + " joined the group " + gameId);
+
+        if (username == game.WhiteUsername)
+            game.WhiteReady = true;
+        else if (username == game.BlackUsername)
+            game.BlackReady = true;
+
+        if (game.WhiteReady && game.BlackReady)
         {
             await Clients.Group(gameId).SendAsync("GameStart");
         }

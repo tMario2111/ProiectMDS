@@ -1,16 +1,20 @@
-import {useEffect, useState} from 'react'
+import {useEffect, useRef, useState} from 'react'
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 import './Home.css';
 
 import {startConnection, registerHandler, getConnection} from './connection';
+import {useNavigate} from "react-router-dom";
 
 
 function Home() {
     const [username, setUsername] = useState('');
     const [error, setError] = useState('');
     const [gameId, setGameId] = useState('');
+    const gameIdRef = useRef('');
+
+    const navigate = useNavigate();
 
     useEffect(() => {
         const initialize = async () => {
@@ -22,8 +26,11 @@ function Home() {
         initialize();
 
         registerHandler("GameStart", () => {
-            console.log("Game started! yay");
-            
+            console.log("Game started!");
+
+            navigate(`/game/${gameIdRef.current}`);
+
+
             registerHandler("GameStart", () => {
             });
         });
@@ -67,7 +74,7 @@ function Home() {
             setError('Username is required');
             return;
         }
-        
+
         await handleRegisterToHub();
 
         try {
@@ -84,12 +91,16 @@ function Home() {
             }
 
             const data = await response.json();
-
-            const connection = getConnection();
-            await connection.invoke("JoinGameGroup", gameId);
             
-            setGameId(data.gameId);
-            window.location.href = `/game/create/${data.gameId}`;
+            const connection = getConnection();
+            await connection.invoke("JoinGameGroup", data.gameId);
+            
+            gameIdRef.current = data.gameId;
+            
+            console.log("Actual game id: " + gameIdRef.current);
+            console.log("It should be " + data.gameId);
+            
+            navigate(`/game/create/${data.gameId}`);
         } catch (error) {
             setError(error.message);
         }
@@ -105,7 +116,7 @@ function Home() {
             setError("Game code is required");
             return;
         }
-        
+
         await handleRegisterToHub();
 
         try {
@@ -121,6 +132,9 @@ function Home() {
                 console.log(response.status);
                 throw new Error("Game not found");
             }
+            
+            gameIdRef.current = gameId;
+            console.log("Actual game id: " + gameIdRef.current);
 
             const connection = getConnection();
             await connection.invoke("JoinGameGroup", gameId);

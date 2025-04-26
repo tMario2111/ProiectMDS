@@ -7,6 +7,9 @@ public class Game
     public string? WhiteUsername;
     public string? BlackUsername;
 
+    public bool WhiteReady = false;
+    public bool BlackReady = false;
+
     public bool GameStarted = false;
 
     public static string GenerateGameCode()

@@ -5,15 +5,6 @@ import {registerHandler} from "./connection.js";
 function GameCreation() {
     const { code } = useParams();
 
-    useEffect(() => {
-        registerHandler("GameStart", () => {
-            console.log("Game started! yay");
-
-            registerHandler("GameStart", () => {
-            });
-        });
-    }, [])
-
     return <>
         <div class="center d-flex flex-column justify-content-center align-items-center">
             <h1 class="mb-5">Create a game</h1>
