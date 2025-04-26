@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import {useEffect, useState} from 'react'
+import {useParams} from 'react-router-dom'
 import {registerHandler} from "./connection.js";
 
 function GameCreation() {
-    const { code } = useParams();
+    const {code} = useParams();
 
     return <>
         <div class="center d-flex flex-column justify-content-center align-items-center">

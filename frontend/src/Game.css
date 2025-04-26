@@ -1,4 +1,4 @@
-/* Ensure the entire viewport is used */
+﻿/* Ensure the entire viewport is used */
 html,
 body {
     height: 100%;
@@ -7,6 +7,7 @@ body {
 
 #chessboard-div {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     height: 100vh;

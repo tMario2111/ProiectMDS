@@ -4,7 +4,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 
 import './Home.css';
 
-import {startConnection, registerHandler, getConnection} from './connection';
+import {startConnection, registerHandler, getConnection, assignUsername, getUsername} from './connection';
 import {useNavigate} from "react-router-dom";
 
 
@@ -97,8 +97,7 @@ function Home() {
             
             gameIdRef.current = data.gameId;
             
-            console.log("Actual game id: " + gameIdRef.current);
-            console.log("It should be " + data.gameId);
+            assignUsername(username);
             
             navigate(`/game/create/${data.gameId}`);
         } catch (error) {
@@ -134,7 +133,8 @@ function Home() {
             }
             
             gameIdRef.current = gameId;
-            console.log("Actual game id: " + gameIdRef.current);
+            
+            assignUsername(username);
 
             const connection = getConnection();
             await connection.invoke("JoinGameGroup", gameId);

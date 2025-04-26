@@ -1,7 +1,17 @@
-import { HubConnectionBuilder, JsonHubProtocol } from '@microsoft/signalr';
+import {HubConnectionBuilder, JsonHubProtocol} from '@microsoft/signalr';
 
 let connection = null;
 let connectionPromise = null;
+
+let username = null;
+
+export const getUsername = () => {
+    return username;
+}
+
+export const assignUsername = (name) => {
+    username = name;
+}
 
 export const startConnection = async () => {
     if (connectionPromise) return connectionPromise;

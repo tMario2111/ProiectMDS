@@ -90,6 +90,25 @@ app.MapPost("api/join-game", async (JoinGameRequest request, IHubContext<GameHub
     return Results.Ok();
 });
 
+// At the moment, anyone can get any game
+app.MapGet("api/get-game", (string? gameCode) =>
+{
+    var gameStateService = app.Services.GetRequiredService<GameStateService>();
+
+    if (gameCode is null)
+        return Results.BadRequest("Game code is null");
+    if (!gameStateService.Games.TryGetValue(gameCode, out var game))
+        return Results.NotFound("Game does not exist");
+
+    var response = new GetGameResponse
+    {
+        WhiteUsername = game.WhiteUsername,
+        BlackUsername = game.BlackUsername,
+    };
+
+    return Results.Ok(response);
+});
+
 app.UseHttpsRedirection();
 
 app.MapHub<GameHub>("/gameHub");
