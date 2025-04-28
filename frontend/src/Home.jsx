@@ -29,8 +29,7 @@ function Home() {
             console.log("Game started!");
 
             navigate(`/game/${gameIdRef.current}`);
-
-
+            
             registerHandler("GameStart", () => {
             });
         });

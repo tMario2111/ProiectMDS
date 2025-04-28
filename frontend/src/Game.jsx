@@ -44,17 +44,23 @@ function Game() {
 
         fetchGame();
 
-        registerHandler("GetMove", (move) => {
-            if (move["color"] === 'white' && color.current === WHITE) 
+        const cleanup = registerHandler("GetMove", (move) => {
+            if (move["color"] === 'white' && color.current === WHITE)
                 return;
             if (move["color"] === 'black' && color.current === BLACK)
                 return;
             
+            console.log(move["sourceSquare"] + " " + move["destinationSquare"]);
+
             makeAMove({
                 from: move["sourceSquare"],
                 to: move["destinationSquare"],
             });
         });
+
+        return () => {
+            cleanup();
+        }
     }, [code]);
 
     function makeAMove(move) {

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
+using Chess;
 using Microsoft.AspNetCore.SignalR;
 
 namespace backend;
@@ -61,7 +62,7 @@ public class GameHub : Hub
             await Clients.Group(gameId).SendAsync("GameStart");
         }
     }
-    
+
     // TODO: This needs server-side validation
     public async Task MakeMove(MakeMoveMessage move)
     {
@@ -89,9 +90,34 @@ public class GameHub : Hub
             return;
         }
 
+        var color = game.WhiteUsername == username ? "white" : "black";
+
+        if (game.Board.Turn == PieceColor.White && color != "white" ||
+            game.Board.Turn == PieceColor.Black && color != "black")
+        {
+            await Clients.Caller.SendAsync("Error", "Can't make a move if it's not your turn");
+            return;
+        }
+
+        if (move.SourceSquare == null || move.DestinationSquare == null)
+        {
+            await Clients.Caller.SendAsync("Error", "Move is null");
+            return;
+        }
+
+        try
+        {
+            game.Board.Move(new Move(move.SourceSquare, move.DestinationSquare));
+        }
+        catch (ChessInvalidMoveException exception)
+        {
+            await Clients.Caller.SendAsync("Error", exception.Message);
+            return;
+        }
+
         var response = new GetMoveMessage()
         {
-            Color = game.WhiteUsername == username ? "white" : "black",
+            Color = color,
             SourceSquare = move.SourceSquare,
             DestinationSquare = move.DestinationSquare,
         };

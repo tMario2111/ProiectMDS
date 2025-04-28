@@ -1,9 +1,11 @@
 ﻿namespace backend;
 
+using Chess;
+
 public class Game
 {
     public string? Code;
-    
+
     public string? WhiteUsername;
     public string? BlackUsername;
 
@@ -11,6 +13,8 @@ public class Game
     public bool BlackReady = false;
 
     public bool GameStarted = false;
+
+    public ChessBoard Board = new ChessBoard();
 
     public static string GenerateGameCode()
     {
