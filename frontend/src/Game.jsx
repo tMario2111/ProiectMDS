@@ -5,6 +5,7 @@ import {BLACK, Chess, WHITE} from "chess.js";
 import {Chessboard} from "react-chessboard";
 import {useParams} from "react-router-dom";
 import {getConnection, getUsername, registerHandler} from "./connection.js";
+import Clock from "./components/Clock.jsx";
 
 function Game() {
     const [game, setGame] = useState(new Chess());
@@ -108,16 +109,23 @@ function Game() {
         return move !== null;
     }
 
+    // Time is hardcoded for now
     return <>
         <div id="chessboard-div">
-            <h1>{whiteUsername === getUsername() ? blackUsername : whiteUsername}</h1>
+            <div className="d-flex flex-row align-items-center justify-content-between w-25">
+                <h1>{whiteUsername === getUsername() ? blackUsername : whiteUsername}</h1>
+                <Clock timeLimit={180}/>
+            </div>
             <div className="chessboard-wrapper">
                 <Chessboard boardWidth={600} position={game.fen()} onPieceDrop={onDrop} snapToCursor={true}
                             boardOrientation={whiteUsername === getUsername() ? 'white' : 'black'}/>
             </div>
-            <h1>{getUsername()}</h1>
+            <div className="d-flex flex-row align-items-center justify-content-between w-25">
+                <h1>{getUsername()}</h1>
+                <Clock timeLimit={180}/>
+            </div>
         </div>
-    </>;
+    </>
 }
 
 export default Game;
