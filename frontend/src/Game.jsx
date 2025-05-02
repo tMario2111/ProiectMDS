@@ -49,13 +49,21 @@ function Game() {
                 return;
             if (move["color"] === 'black' && color.current === BLACK)
                 return;
-            
-            console.log(move["sourceSquare"] + " " + move["destinationSquare"]);
 
-            makeAMove({
-                from: move["sourceSquare"],
-                to: move["destinationSquare"],
-            });
+            if (move["promotion"] == null) {
+                console.log(move["sourceSquare"] + " " + move["destinationSquare"]);
+                makeAMove({
+                    from: move["sourceSquare"],
+                    to: move["destinationSquare"],
+                });
+            } else {
+                console.log(move["sourceSquare"] + " " + move["destinationSquare"] + " " + move["promotion"]);
+                makeAMove({
+                    from: move["sourceSquare"],
+                    to: move["destinationSquare"],
+                    promotion: move["promotion"].toLowerCase(),
+                })
+            }
         });
 
         return () => {
@@ -70,13 +78,21 @@ function Game() {
         return result;
     }
 
-    function onDrop(sourceSquare, targetSquare) {
+    function onDrop(sourceSquare, targetSquare, piece) {
         if (game.turn() !== color.current)
             return false;
+
+        // Got here
+        // TODO: Handle promotion server-side
+        let promotion = null;
+        if (game.get(sourceSquare).type !== piece[1].toLowerCase()) {
+            promotion = piece[1].toUpperCase() ?? "Q";
+        }
 
         const move = makeAMove({
             from: sourceSquare,
             to: targetSquare,
+            promotion: piece[1].toLowerCase() ?? "q",
         });
 
         if (move !== null) {
@@ -85,6 +101,7 @@ function Game() {
                 GameCode: code,
                 SourceSquare: sourceSquare,
                 DestinationSquare: targetSquare,
+                Promotion: promotion,
             });
         }
 
