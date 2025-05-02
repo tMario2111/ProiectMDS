@@ -14,6 +14,7 @@ public class MakeMoveMessage
     public string? GameCode { get; set; }
     public string? SourceSquare { get; set; }
     public string? DestinationSquare { get; set; }
+    public string? Promotion { get; set; }
 }
 
 public class GetMoveMessage
@@ -21,4 +22,5 @@ public class GetMoveMessage
     public string? Color { get; set; }
     public string? SourceSquare { get; set; }
     public string? DestinationSquare { get; set; }
+    public string? Promotion { get; set; }
 }

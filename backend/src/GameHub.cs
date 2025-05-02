@@ -107,7 +107,15 @@ public class GameHub : Hub
 
         try
         {
-            game.Board.Move(new Move(move.SourceSquare, move.DestinationSquare));
+            if (move.Promotion is null)
+                game.Board.Move(new Move(move.SourceSquare, move.DestinationSquare));
+            else // Promotion
+            {
+                // If the file changes (first character in move), then a capture was made and the SAN notation differs
+                game.Board.Move(move.SourceSquare[0] != move.DestinationSquare[0]
+                    ? $"P{move.SourceSquare}x{move.DestinationSquare}={move.Promotion}"
+                    : $"P{move.DestinationSquare}={move.Promotion}");
+            }
         }
         catch (ChessInvalidMoveException exception)
         {
@@ -120,6 +128,7 @@ public class GameHub : Hub
             Color = color,
             SourceSquare = move.SourceSquare,
             DestinationSquare = move.DestinationSquare,
+            Promotion = move.Promotion,
         };
 
         await Clients.Group(move.GameCode).SendAsync("GetMove", response);

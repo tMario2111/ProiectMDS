@@ -13,6 +13,8 @@ export const assignUsername = (name) => {
     username = name;
 }
 
+// TODO: Connection timeouts, leaving user unable to continue the game
+// Increase the timeout or rethink the connection system
 export const startConnection = async () => {
     if (connectionPromise) return connectionPromise;
 
