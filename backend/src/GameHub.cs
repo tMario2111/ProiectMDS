@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Chess;
 using Microsoft.AspNetCore.SignalR;
@@ -60,10 +61,17 @@ public class GameHub : Hub
         if (game.WhiteReady && game.BlackReady)
         {
             await Clients.Group(gameId).SendAsync("GameStart");
+
+            // Only start the white clock
+            // Game starts as soon as clients are notified
+            // Not the best approach but works for now
+            game.WhiteClock = new Stopwatch();
+            game.WhiteClock.Start();
+
+            game.BlackClock = new Stopwatch();
         }
     }
 
-    // TODO: This needs server-side validation
     public async Task MakeMove(MakeMoveMessage move)
     {
         if (!_gameState.ConnectionUsername.TryGetValue(Context.ConnectionId, out var username))
@@ -123,12 +131,30 @@ public class GameHub : Hub
             return;
         }
 
+        TimeSpan time;
+
+        if (color == "white")
+        {
+            game.WhiteClock!.Stop();
+            time = game.TimeControl - game.WhiteClock.Elapsed;
+            game.BlackClock!.Start();
+        }
+        else
+        {
+            game.BlackClock!.Stop();
+            time = game.TimeControl - game.BlackClock.Elapsed;
+            game.WhiteClock!.Start();
+        }
+
+        // Milliseconds only returns the component, not the whole time :(
+        // Fix
         var response = new GetMoveMessage()
         {
             Color = color,
             SourceSquare = move.SourceSquare,
             DestinationSquare = move.DestinationSquare,
             Promotion = move.Promotion,
+            Time = (long)time.TotalMilliseconds,
         };
 
         await Clients.Group(move.GameCode).SendAsync("GetMove", response);

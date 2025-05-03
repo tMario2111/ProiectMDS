@@ -1,4 +1,6 @@
-﻿namespace backend;
+﻿using System.Diagnostics;
+
+namespace backend;
 
 using Chess;
 
@@ -15,6 +17,12 @@ public class Game
     public bool GameStarted = false;
 
     public ChessBoard Board = new ChessBoard();
+
+    // Hardcoded for now
+    public TimeSpan TimeControl = TimeSpan.FromSeconds(180);
+
+    public Stopwatch? WhiteClock;
+    public Stopwatch? BlackClock;
 
     public static string GenerateGameCode()
     {
