@@ -17,6 +17,9 @@ function Game() {
 
     const color = useRef('');
 
+    const selfClock = useRef();
+    const opponentClock = useRef();
+
     // TODO: This get request executes twice
     useEffect(() => {
         const fetchGame = async () => {
@@ -38,6 +41,11 @@ function Game() {
                 else
                     color.current = BLACK;
 
+                if (color.current === BLACK)
+                    opponentClock.current.resume();
+                else
+                    selfClock.current.resume();
+
             } catch (error) {
                 console.error(error)
             }
@@ -46,6 +54,18 @@ function Game() {
         fetchGame();
 
         const cleanup = registerHandler("GetMove", (move) => {
+            // If the current player made the move
+            if (move["color"] === 'white' && color.current === WHITE ||
+                move["color"] === 'black' && color.current === BLACK) {
+                selfClock.current.stop();
+                selfClock.current.setRemainingTime(move["time"]);
+                opponentClock.current.resume();
+            } else {
+                opponentClock.current.stop();
+                opponentClock.current.setRemainingTime(move["time"]);
+                selfClock.current.resume();
+            }
+
             if (move["color"] === 'white' && color.current === WHITE)
                 return;
             if (move["color"] === 'black' && color.current === BLACK)
@@ -112,17 +132,17 @@ function Game() {
     // Time is hardcoded for now
     return <>
         <div id="chessboard-div">
-            <div className="d-flex flex-row align-items-center justify-content-between w-25">
-                <h1>{whiteUsername === getUsername() ? blackUsername : whiteUsername}</h1>
-                <Clock timeLimit={180}/>
+            <div className="d-flex flex-row align-items-center gap-5">
+                <h1 className="me-5">{whiteUsername === getUsername() ? blackUsername : whiteUsername}</h1>
+                <Clock ref={opponentClock} timeLimit={180}/>
             </div>
             <div className="chessboard-wrapper">
                 <Chessboard boardWidth={600} position={game.fen()} onPieceDrop={onDrop} snapToCursor={true}
                             boardOrientation={whiteUsername === getUsername() ? 'white' : 'black'}/>
             </div>
-            <div className="d-flex flex-row align-items-center justify-content-between w-25">
-                <h1>{getUsername()}</h1>
-                <Clock timeLimit={180}/>
+            <div className="d-flex flex-row align-items-center gap-5">
+                <h1 className="me-5">{getUsername()}</h1>
+                <Clock ref={selfClock} timeLimit={180}/>
             </div>
         </div>
     </>

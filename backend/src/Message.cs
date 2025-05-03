@@ -23,4 +23,5 @@ public class GetMoveMessage
     public string? SourceSquare { get; set; }
     public string? DestinationSquare { get; set; }
     public string? Promotion { get; set; }
+    public long? Time { get; set; }
 }
