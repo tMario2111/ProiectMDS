@@ -6,6 +6,7 @@ import './Home.css';
 
 import {startConnection, registerHandler, getConnection, assignUsername, getUsername} from './connection';
 import {useNavigate} from "react-router-dom";
+import {getToken} from "./Auth.js";
 
 
 function Home() {
@@ -29,7 +30,7 @@ function Home() {
             console.log("Game started!");
 
             navigate(`/game/${gameIdRef.current}`);
-            
+
             registerHandler("GameStart", () => {
             });
         });
@@ -77,10 +78,12 @@ function Home() {
         await handleRegisterToHub();
 
         try {
+            const token = await getToken();
             const response = await fetch('https://localhost:7008/api/create-game', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({Username: username}),
             });
@@ -90,14 +93,14 @@ function Home() {
             }
 
             const data = await response.json();
-            
+
             const connection = getConnection();
             await connection.invoke("JoinGameGroup", data.gameId);
-            
+
             gameIdRef.current = data.gameId;
-            
+
             assignUsername(username);
-            
+
             navigate(`/game/create/${data.gameId}`);
         } catch (error) {
             setError(error.message);
@@ -118,10 +121,12 @@ function Home() {
         await handleRegisterToHub();
 
         try {
+            const token = await getToken();
             const response = await fetch('https://localhost:7008/api/join-game', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({Username: username, GameId: gameId}),
             });
@@ -130,9 +135,9 @@ function Home() {
                 console.log(response.status);
                 throw new Error("Game not found");
             }
-            
+
             gameIdRef.current = gameId;
-            
+
             assignUsername(username);
 
             const connection = getConnection();
@@ -143,32 +148,32 @@ function Home() {
     }
 
     return <>
-        <div class="center d-flex flex-column justify-content-center align-items-center">
-            <h1 class="mb-5">Chess V2</h1>
-            <div class="form-floating mb-4">
-                <input class="form-control" autocomplete="Username" aria-required="true" placeholder="Username"
+        <div className="center d-flex flex-column justify-content-center align-items-center">
+            <h1 className="mb-5">Chess V2</h1>
+            <div className="form-floating mb-4">
+                <input className="form-control" autocomplete="Username" aria-required="true" placeholder="Username"
                        value={username} onChange={(e) => setUsername(e.target.value)}/>
                 <label>Username</label>
             </div>
             {/* TODO: Better UX than this "universal" error message  */}
             {error && <span className="text-danger">{error}</span>}
-            <div class="mt-5"></div>
-            <div class="d-flex flex-row justify-content-center align-items-start gap-5">
-                <div class="d-flex flex-column justify-content-start align-items-center gap-5">
+            <div className="mt-5"></div>
+            <div className="d-flex flex-row justify-content-center align-items-start gap-5">
+                <div className="d-flex flex-column justify-content-start align-items-center gap-5">
                     <h2>Create game</h2>
-                    <button class="btn btn-primary" onClick={handleCreateGame}>
+                    <button className="btn btn-primary" onClick={handleCreateGame}>
                         Create new game
                     </button>
                 </div>
-                <div class="vr"></div>
-                <div class="d-flex flex-column justify-content-center align-items-center">
-                    <h2 class="mb-5">Join with code</h2>
-                    <div class="form-floating mb-4">
-                        <input class="form-control" autocomplete="Game code" aria-required="true"
+                <div className="vr"></div>
+                <div className="d-flex flex-column justify-content-center align-items-center">
+                    <h2 className="mb-5">Join with code</h2>
+                    <div className="form-floating mb-4">
+                        <input className="form-control" autocomplete="Game code" aria-required="true"
                                placeholder="Game code" value={gameId} onChange={(e) => setGameId(e.target.value)}/>
                         <label>Game code</label>
                     </div>
-                    <button class="btn btn-primary" onClick={handleJoinGame}>Join</button>
+                    <button className="btn btn-primary" onClick={handleJoinGame}>Join</button>
                 </div>
             </div>
         </div>

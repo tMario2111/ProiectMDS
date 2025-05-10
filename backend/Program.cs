@@ -1,11 +1,49 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using backend;
-using MessagePack;
-using MessagePack.Resolvers;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<GameStateService>();
+
+builder.Configuration.AddJsonFile("secret.json");
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = "ChessV2",
+            ValidateAudience = true,
+            ValidAudience = "ChessV2Clients",
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"]!))
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(accessToken))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddCors(options =>
@@ -13,7 +51,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowSpecificOrigin",
         builder =>
         {
-            builder.WithOrigins("http://localhost:5173") // Allow your React app's origin
+            builder.WithOrigins("http://localhost:5173")
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials();
@@ -21,11 +59,15 @@ builder.Services.AddCors(options =>
 });
 
 
-builder.Services.AddSignalR(options => { options.EnableDetailedErrors = true; }).AddJsonProtocol();
+builder.Services
+    .AddSignalR(options => { options.EnableDetailedErrors = true; })
+    .AddJsonProtocol();
 
 var app = builder.Build();
 
 app.UseCors("AllowSpecificOrigin");
+app.UseAuthentication();
+app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())
 {
@@ -34,6 +76,28 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.MapGet("/api/token", (IConfiguration config) =>
+{
+    var claims = new[]
+    {
+        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+        new Claim("clientType", "chessClient")
+    };
+
+    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Secret"]!));
+    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+    var token = new JwtSecurityToken(
+        issuer: "ChessV2",
+        audience: "ChessV2Clients",
+        claims: claims,
+        expires: DateTime.UtcNow.AddHours(2),
+        signingCredentials: creds
+    );
+
+    return Results.Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token) });
+}).AllowAnonymous();
 
 app.MapPost("/api/create-game", (CreateGameRequest request) =>
 {
@@ -65,7 +129,7 @@ app.MapPost("/api/create-game", (CreateGameRequest request) =>
     };
 
     return Results.Ok(response);
-});
+}).RequireAuthorization();
 
 app.MapPost("api/join-game", async (JoinGameRequest request, IHubContext<GameHub> hubContext) =>
 {
@@ -88,9 +152,8 @@ app.MapPost("api/join-game", async (JoinGameRequest request, IHubContext<GameHub
     gameStateService.Games[request.GameId].GameStarted = true;
 
     return Results.Ok();
-});
+}).RequireAuthorization();
 
-// At the moment, anyone can get any game
 app.MapGet("api/get-game", (string? gameCode) =>
 {
     var gameStateService = app.Services.GetRequiredService<GameStateService>();
@@ -107,10 +170,10 @@ app.MapGet("api/get-game", (string? gameCode) =>
     };
 
     return Results.Ok(response);
-});
+}).RequireAuthorization();
 
 app.UseHttpsRedirection();
 
-app.MapHub<GameHub>("/gameHub");
+app.MapHub<GameHub>("/gameHub").RequireAuthorization();
 
 app.Run();

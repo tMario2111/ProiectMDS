@@ -1,4 +1,5 @@
 import {HubConnectionBuilder, JsonHubProtocol} from '@microsoft/signalr';
+import {getToken} from "./Auth.js";
 
 let connection = null;
 let connectionPromise = null;
@@ -20,7 +21,11 @@ export const startConnection = async () => {
 
     connectionPromise = (async () => {
         connection = new HubConnectionBuilder()
-            .withUrl("https://localhost:7008/gameHub")
+            .withUrl("https://localhost:7008/gameHub", {
+                accessTokenFactory: async () => {
+                    return await getToken();
+                },
+            })
             .withHubProtocol(new JsonHubProtocol())
             .withAutomaticReconnect()
             .build();

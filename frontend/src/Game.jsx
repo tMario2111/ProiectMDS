@@ -6,6 +6,7 @@ import {Chessboard} from "react-chessboard";
 import {useParams} from "react-router-dom";
 import {getConnection, getUsername, registerHandler} from "./connection.js";
 import Clock from "./components/Clock.jsx";
+import {getToken} from "./Auth.js";
 
 function Game() {
     const [game, setGame] = useState(new Chess());
@@ -24,8 +25,14 @@ function Game() {
     useEffect(() => {
         const fetchGame = async () => {
             try {
+                const token = await getToken();
                 const response =
-                    await fetch(`https://localhost:7008/api/get-game?gameCode=${encodeURIComponent(code)}`);
+                    await fetch(`https://localhost:7008/api/get-game?gameCode=${encodeURIComponent(code)}`,
+                        {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
 
                 if (!response.ok) {
                     console.error(response);

@@ -7,12 +7,14 @@ import Game from './Game.jsx'
 import Home from './Home.jsx'
 import GameCreation from './GameCreation.jsx';
 import {startConnection} from "./connection.js";
+import {getToken} from "./Auth.js";
 
 function GameNotFound() {
   return <h1>Could not find game</h1>
 }
 
 const initialize = async () => {
+    await getToken();
     try {
         await startConnection();
     } catch (error) {

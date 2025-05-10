@@ -146,8 +146,6 @@ public class GameHub : Hub
             game.WhiteClock!.Start();
         }
 
-        // Milliseconds only returns the component, not the whole time :(
-        // Fix
         var response = new GetMoveMessage()
         {
             Color = color,
