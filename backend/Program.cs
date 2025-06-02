@@ -99,7 +99,7 @@ app.MapGet("/api/token", (IConfiguration config) =>
     return Results.Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token) });
 }).AllowAnonymous();
 
-app.MapPost("/api/create-game", (CreateGameRequest request) =>
+app.MapPost("/api/create-game", (CreateGameRequest request, HttpContext context) =>
 {
     var gameStateService = app.Services.GetRequiredService<GameStateService>();
 
@@ -114,7 +114,7 @@ app.MapPost("/api/create-game", (CreateGameRequest request) =>
     }
 
     var gameId = Game.GenerateGameCode();
-
+    
     gameStateService.Games[gameId] = new Game
     {
         Code = gameId,
