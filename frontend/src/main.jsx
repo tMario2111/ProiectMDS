@@ -6,6 +6,7 @@ import './index.css'
 import Game from './Game.jsx'
 import Home from './Home.jsx'
 import GameCreation from './GameCreation.jsx';
+// import GameEnded from './GameEnded.jsx'
 import {startConnection} from "./connection.js";
 
 function GameNotFound() {
@@ -27,6 +28,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/" element={<Home/>}/>
         <Route path="/game/:code" element={<Game/>}/>
         <Route path="/game/create/:code" element={<GameCreation/>}/>
+          {/*<Route path="/game/end/" element={<GameEnded/>}/>*/}
         <Route path="*" element={<GameNotFound/>}/>
       </Routes>
     </Router>

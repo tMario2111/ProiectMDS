@@ -1,8 +1,14 @@
 ﻿using System.Diagnostics;
+using Chess;
+using System.Collections.Generic;
 
 namespace backend;
 
-using Chess;
+public class PlayerPerks
+{
+    public string LayoutPerk { get; set; } = ""; // "3bishops" sau "3knights"
+    public bool TimeOnCheck { get; set; } = false;
+}
 
 public class Game
 {
@@ -18,11 +24,13 @@ public class Game
 
     public ChessBoard Board = new ChessBoard();
 
-    // Hardcoded for now
     public TimeSpan TimeControl = TimeSpan.FromSeconds(180);
 
     public Stopwatch? WhiteClock;
     public Stopwatch? BlackClock;
+
+    // Perks pentru fiecare player (username -> perks)
+    public Dictionary<string, PlayerPerks> Perks = new();
 
     public static string GenerateGameCode()
     {

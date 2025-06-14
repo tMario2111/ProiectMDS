@@ -1,14 +1,64 @@
 ﻿/* Ensure the entire viewport is used */
-html,
 body {
-    height: 100%;
+    background: linear-gradient(120deg, #f8f6f0 0%, #e7e3da 100%);
+    font-family: 'Montserrat', sans-serif;
+    min-height: 100vh;
     margin: 0;
 }
 
-#chessboard-div {
+#premium-chess-root {
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     height: 100vh;
+}
+
+.chess-premium-board {
+    border-radius: 24px;
+    box-shadow: 0 6px 36px #c8bfaa33;
+    overflow: hidden;
+    margin: 32px 0;
+}
+
+.chess-premium-clock {
+    background: #ece9d8;
+    color: #2d2b26;
+    font-weight: bold;
+    font-size: 2rem;
+    border-radius: 12px;
+    padding: 12px 32px;
+    margin: 16px 0;
+    box-shadow: 0 2px 12px #c8bfaa18;
+    letter-spacing: 2px;
+}
+
+.chess-premium-username {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #776b53;
+    margin-bottom: 6px;
+}
+
+.chess-premium-btn {
+    background: #e4c77b;
+    color: #21201a;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 10px;
+    padding: 13px 32px;
+    margin: 12px;
+    cursor: pointer;
+    transition: 0.3s box-shadow, 0.3s background;
+    box-shadow: 0 2px 8px #b8aa7e29;
+}
+.chess-premium-btn:hover {
+    background: #f5e4b7;
+    box-shadow: 0 3px 18px #e4c77b55;
+}
+
+.chess-premium-accent {
+    color: #b08d3a;
+    font-weight: 900;
+    letter-spacing: 2px;
 }
