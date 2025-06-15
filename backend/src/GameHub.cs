@@ -173,17 +173,21 @@ public class GameHub : Hub
         }
 
         TimeSpan time;
+        var timeWhiteOver=false;
+        var timeBlackOver=false;
 
         if (color == "white")
         {
             game.WhiteClock!.Stop();
             time = game.TimeControl - game.WhiteClock.Elapsed;
+            timeWhiteOver = time < TimeSpan.Zero;
             game.BlackClock!.Start();
         }
         else
         {
             game.BlackClock!.Stop();
             time = game.TimeControl - game.BlackClock.Elapsed;
+            timeBlackOver = time < TimeSpan.Zero;
             game.WhiteClock!.Start();
         }
 
@@ -225,7 +229,35 @@ public class GameHub : Hub
                 whiteUsername = game.WhiteUsername,
                 blackUsername = game.BlackUsername
             });
+        }
 
+        //daca s-a terminat timpul pentru alb(se verifica dupa ce se face mutarea)
+        if (timeWhiteOver)
+        {
+            var endType = "timeout";
+            var winner = "Black";
+            Console.WriteLine($"{endType} {winner}");
+            await Clients.Group(move.GameCode).SendAsync("GameOver", new
+            {
+                winner,
+                endType,
+                whiteUsername = game.WhiteUsername,
+                blackUsername = game.BlackUsername
+            });
+        }
+        //daca s-a terminat timpul pentru negru
+        if (timeBlackOver)
+        {
+            var endType = "timeout";
+            var winner = "White";
+            Console.WriteLine($"{endType} {winner}");
+            await Clients.Group(move.GameCode).SendAsync("GameOver", new
+            {
+                winner,
+                endType,
+                whiteUsername = game.WhiteUsername,
+                blackUsername = game.BlackUsername
+            });
         }
     }
 
