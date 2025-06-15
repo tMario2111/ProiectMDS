@@ -32,7 +32,6 @@ public class GameHub : Hub
         await Clients.Caller.SendAsync("RegisterSuccessful", new RegisterSuccessfulMessage());
     }
 
-    // TODO: Maybe solve the double "GameStart" message
     public async Task JoinGameGroup(string gameId)
     {
         if (!_gameState.ConnectionUsername.TryGetValue(Context.ConnectionId, out var username))
@@ -50,7 +49,6 @@ public class GameHub : Hub
 
         await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
 
-        // TODO: Would be really great to have some logs
         Console.WriteLine(Context.ConnectionId + " joined the group " + gameId);
 
         if (username == game.WhiteUsername)
@@ -63,11 +61,10 @@ public class GameHub : Hub
             string whiteFenRow = "RNBQKBNR"; // default
             string blackFenRow = "rnbqkbnr"; // default
 
-            // Exemplu: ai salvat la game.Perks[whiteUsername].LayoutPerk
             if (game.Perks[game.WhiteUsername].LayoutPerk == "3knights") 
                 whiteFenRow = "RNNQKBNR";
             else if (game.Perks[game.WhiteUsername].LayoutPerk == "3bishops")
-                whiteFenRow = "RBBQKNBR"; // exemplu, adaptează după cum vrei
+                whiteFenRow = "RBBQKNBR"; 
 
             if (game.Perks[game.BlackUsername].LayoutPerk == "3knights") 
                 blackFenRow = "rnnqkbnr";
@@ -84,6 +81,37 @@ public class GameHub : Hub
 
             game.BlackClock = new Stopwatch();
         }
+    }
+    
+    public async Task JoinAsSpectator(string gameId)
+    {
+        if (!_gameState.Games.TryGetValue(gameId, out var game))
+        {
+            await Clients.Caller.SendAsync("Error", "Game not found");
+            return;
+        }
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
+
+        // Send current state (fen, clocks, usernames)
+        var fen = game.Board.ToFen();
+        var whiteTime = game.WhiteClock != null ? (long)(game.TimeControl - game.WhiteClock.Elapsed).TotalMilliseconds : (long)game.TimeControl.TotalMilliseconds;
+        var blackTime = game.BlackClock != null ? (long)(game.TimeControl - game.BlackClock.Elapsed).TotalMilliseconds : (long)game.TimeControl.TotalMilliseconds;
+
+        await Clients.Caller.SendAsync("SpectatorSync", new
+        {
+            fen,
+            whiteTime,
+            blackTime,
+            whiteUsername = game.WhiteUsername,
+            blackUsername = game.BlackUsername
+        });
+    }
+    public async Task SendChatMessage(string gameId, string sender, string message)
+    {
+        await Clients.Group(gameId).SendAsync("ReceiveChatMessage", new {
+            sender, message, timestamp = DateTime.UtcNow
+        });
     }
 
     public async Task MakeMove(MakeMoveMessage move)
@@ -131,9 +159,8 @@ public class GameHub : Hub
         {
             if (move.Promotion is null)
                 game.Board.Move(new Move(move.SourceSquare, move.DestinationSquare));
-            else // Promotion
+            else
             {
-                // If the file changes (first character in move), then a capture was made and the SAN notation differs
                 game.Board.Move(move.SourceSquare[0] != move.DestinationSquare[0]
                     ? $"P{move.SourceSquare}x{move.DestinationSquare}={move.Promotion}"
                     : $"P{move.DestinationSquare}={move.Promotion}");
@@ -159,20 +186,18 @@ public class GameHub : Hub
             time = game.TimeControl - game.BlackClock.Elapsed;
             game.WhiteClock!.Start();
         }
-        
+
         bool isOpponentInCheck = game.Board.BlackKingChecked || game.Board.WhiteKingChecked;
         if (isOpponentInCheck)
         {
-            if (color == "white" && game.Perks.ContainsKey(game.WhiteUsername) && game.Perks[game.WhiteUsername].TimeOnCheck)
+            if (color == "white" && game.Perks.ContainsKey(game.WhiteUsername) &&
+                game.Perks[game.WhiteUsername].TimeOnCheck)
                 time += TimeSpan.FromSeconds(15);
-            else if (color == "black" && game.Perks.ContainsKey(game.BlackUsername) && game.Perks[game.BlackUsername].TimeOnCheck)
+            else if (color == "black" && game.Perks.ContainsKey(game.BlackUsername) &&
+                     game.Perks[game.BlackUsername].TimeOnCheck)
                 time += TimeSpan.FromSeconds(15);
-            
         }
-        // ------------------------------------------------------------------------
 
-        // Milliseconds only returns the component, not the whole time :(
-        // Fix
         var response = new GetMoveMessage()
         {
             Color = color,
@@ -183,6 +208,25 @@ public class GameHub : Hub
         };
 
         await Clients.Group(move.GameCode).SendAsync("GetMove", response);
+
+        // check whether we have a game ending situation
+        var isGameOver = game.Board.IsEndGame;
+
+        if (isGameOver)
+        {
+            var endGame = game.Board.EndGame;
+            var endType = endGame!.EndgameType.ToString();
+            var winner = endGame.WonSide.ToString(); 
+            Console.WriteLine($"{endType} {endGame.WonSide} {winner}");
+            await Clients.Group(move.GameCode).SendAsync("GameOver", new
+            {
+                winner,
+                endType,
+                whiteUsername = game.WhiteUsername,
+                blackUsername = game.BlackUsername
+            });
+
+        }
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)

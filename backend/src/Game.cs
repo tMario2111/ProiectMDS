@@ -29,7 +29,7 @@ public class Game
     public Stopwatch? WhiteClock;
     public Stopwatch? BlackClock;
 
-    // Perks pentru fiecare player (username -> perks)
+    // Perks pentru fiecare player 
     public Dictionary<string, PlayerPerks> Perks = new();
 
     public static string GenerateGameCode()

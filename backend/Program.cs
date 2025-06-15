@@ -120,6 +120,7 @@ app.MapGet("api/get-game", (string? gameCode) =>
     return Results.Ok(response);
 });
 
+
 app.UseHttpsRedirection();
 
 app.MapHub<GameHub>("/gameHub");
