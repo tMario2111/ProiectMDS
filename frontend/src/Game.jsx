@@ -99,7 +99,6 @@ function ChatBox({gameId, username}) {
 }
 // ---- End ChatBox ----
 
-// Stiluri premium cu chat pe dreapta
 const boardContainerStyle = {
     background: 'linear-gradient(135deg, #f7f4ed 0%, #e4e0d1 100%)',
     borderRadius: '32px',

@@ -1,5 +1,5 @@
 ﻿import {useEffect, useRef, useState} from 'react'
-import {useParams} from "react-router-dom"
+import {useNavigate, useParams} from "react-router-dom"
 import {Chess, BLACK, WHITE} from "chess.js";
 import {Chessboard} from "react-chessboard";
 import {getConnection, registerHandler, startConnection} from "./connection.js";
@@ -145,6 +145,7 @@ const accentStyle = {
 
 function SpectateGame() {
     const { code } = useParams();
+    const navigate = useNavigate();
 
     const [game, setGame] = useState(new Chess());
     const [whiteUsername, setWhiteUsername] = useState('');
@@ -216,10 +217,15 @@ function SpectateGame() {
                 setBlackTime(move.time);
             }
         });
+        const cleanupGameOver = registerHandler("GameOver", (payload) => {
+            navigate("/game/end", { state: payload });
+        });
+
 
         return () => {
             cleanupSync();
             cleanupMove();
+            cleanupGameOver();
         }
     }, [code]);
 

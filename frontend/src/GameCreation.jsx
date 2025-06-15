@@ -97,17 +97,6 @@ function GameCreation() {
                     Share this code with your friend:
                 </div>
                 <div style={codeStyle}>{code}</div>
-                <div style={{margin: "22px 0 18px 0"}}>
-                    <span style={{color: "#6e6142", fontWeight: 600}}>Or send them the link:</span>
-                </div>
-                <a
-                    href={`http://localhost:5173/game/join/${code}`}
-                    style={linkStyle}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    {`http://localhost:5173/game/join/${code}`}
-                </a>
                 <div style={{marginTop: 30, color: "#cab56b", fontSize: 33}}>♕</div>
             </div>
         </div>
