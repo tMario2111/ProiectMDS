@@ -60,11 +60,25 @@ public class GameHub : Hub
 
         if (game.WhiteReady && game.BlackReady)
         {
-            await Clients.Group(gameId).SendAsync("GameStart");
+            string whiteFenRow = "RNBQKBNR"; // default
+            string blackFenRow = "rnbqkbnr"; // default
 
-            // Only start the white clock
-            // Game starts as soon as clients are notified
-            // Not the best approach but works for now
+            // Exemplu: ai salvat la game.Perks[whiteUsername].LayoutPerk
+            if (game.Perks[game.WhiteUsername].LayoutPerk == "3knights") 
+                whiteFenRow = "RNNQKBNR";
+            else if (game.Perks[game.WhiteUsername].LayoutPerk == "3bishops")
+                whiteFenRow = "RBBQKNBR"; // exemplu, adaptează după cum vrei
+
+            if (game.Perks[game.BlackUsername].LayoutPerk == "3knights") 
+                blackFenRow = "rnnqkbnr";
+            else if (game.Perks[game.BlackUsername].LayoutPerk == "3bishops")
+                blackFenRow = "rbbqknbr";
+
+            string fen = $"{blackFenRow}/pppppppp/8/8/8/8/PPPPPPPP/{whiteFenRow} w KQkq - 0 1";
+            game.Board = ChessBoard.LoadFromFen(fen);
+
+            await Clients.Group(gameId).SendAsync("GameStart", new { fen = game.Board.ToFen() });
+
             game.WhiteClock = new Stopwatch();
             game.WhiteClock.Start();
 
@@ -145,6 +159,17 @@ public class GameHub : Hub
             time = game.TimeControl - game.BlackClock.Elapsed;
             game.WhiteClock!.Start();
         }
+        
+        bool isOpponentInCheck = game.Board.BlackKingChecked || game.Board.WhiteKingChecked;
+        if (isOpponentInCheck)
+        {
+            if (color == "white" && game.Perks.ContainsKey(game.WhiteUsername) && game.Perks[game.WhiteUsername].TimeOnCheck)
+                time += TimeSpan.FromSeconds(15);
+            else if (color == "black" && game.Perks.ContainsKey(game.BlackUsername) && game.Perks[game.BlackUsername].TimeOnCheck)
+                time += TimeSpan.FromSeconds(15);
+            
+        }
+        // ------------------------------------------------------------------------
 
         // Milliseconds only returns the component, not the whole time :(
         // Fix

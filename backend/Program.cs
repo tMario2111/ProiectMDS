@@ -1,6 +1,4 @@
 using backend;
-using MessagePack;
-using MessagePack.Resolvers;
 using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,13 +11,12 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowSpecificOrigin",
         builder =>
         {
-            builder.WithOrigins("http://localhost:5173") // Allow your React app's origin
+            builder.WithOrigins("http://localhost:5173")
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials();
         });
 });
-
 
 builder.Services.AddSignalR(options => { options.EnableDetailedErrors = true; }).AddJsonProtocol();
 
@@ -51,12 +48,22 @@ app.MapPost("/api/create-game", (CreateGameRequest request) =>
 
     var gameId = Game.GenerateGameCode();
 
+    var perks = new PlayerPerks
+    {
+        LayoutPerk = request.LayoutPerk,
+        TimeOnCheck = request.TimeOnCheck
+    };
+
     gameStateService.Games[gameId] = new Game
     {
         Code = gameId,
         WhiteUsername = request.Username,
         BlackUsername = null,
         GameStarted = false,
+        Perks = new Dictionary<string, PlayerPerks>
+        {
+            [request.Username] = perks
+        }
     };
 
     var response = new CreateGameResponse
@@ -83,14 +90,18 @@ app.MapPost("api/join-game", async (JoinGameRequest request, IHubContext<GameHub
         game.GameStarted)
         return Results.Conflict("Game is already started");
 
-    // Hardcoded for black
     gameStateService.Games[request.GameId].BlackUsername = request.Username;
     gameStateService.Games[request.GameId].GameStarted = true;
+
+    game.Perks[request.Username] = new PlayerPerks
+    {
+        LayoutPerk = request.LayoutPerk,
+        TimeOnCheck = request.TimeOnCheck
+    };
 
     return Results.Ok();
 });
 
-// At the moment, anyone can get any game
 app.MapGet("api/get-game", (string? gameCode) =>
 {
     var gameStateService = app.Services.GetRequiredService<GameStateService>();
