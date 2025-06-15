@@ -69,7 +69,6 @@
   - "3bishops": Înlocuiește o piesă cu un nebun suplimentar.
 - **Passive:**
   - "Time on Check": Primești +15 secunde la ceas când dai șah.
-  - "Reclaim pawn": O dată pe partidă, poți recupera un pion capturat (idee pentru dezvoltare ulterioară).
 
 #### Alte idei de perks echilibrate:
 - "Double Castling": Permite rocada pe ambele flancuri indiferent dacă ai pierdut dreptul la una.
