@@ -9,13 +9,10 @@ const ACTIVE_PERKS = [
     { value: '3knights', label: '3 Knights + 1 Bishop' },
     { value: '3bishops', label: '3 Bishops + 1 Knight' }
 ];
-
 const PASSIVE_PERKS = [
-    { value: 'timeOnCheck', label: 'Gain +15s when you deliver check' },
-    { value: 'reclaimPawn', label: 'Once/game, reclaim a captured pawn' }
+    { value: 'timeOnCheck', label: 'Gain +15s when you deliver check' }
 ];
 
-// --- PREMIUM CSS INLINE ---
 const pageStyle = {
     background: 'linear-gradient(120deg, #f3eee1 0%, #f9f8f6 100%)',
     minHeight: '100vh',
@@ -25,21 +22,6 @@ const pageStyle = {
     justifyContent: 'center',
     fontFamily: "'Montserrat', 'Lato', sans-serif"
 };
-
-const mainCardStyle = {
-    background: "linear-gradient(135deg, #f7f4ed 0%, #e4e0d1 100%)",
-    borderRadius: "32px",
-    boxShadow: "0 8px 40px #a3926a22",
-    padding: "32px 22px 32px 22px",
-    minWidth: 350,
-    maxWidth: 400,
-    width: "100%",
-    margin: "0 18px",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center"
-};
-
 const titleStyle = {
     fontWeight: 900,
     fontSize: "2.3rem",
@@ -48,7 +30,6 @@ const titleStyle = {
     letterSpacing: "2px",
     textAlign: "center"
 };
-
 const subTitleStyle = {
     fontWeight: 600,
     fontSize: "1.1rem",
@@ -56,21 +37,18 @@ const subTitleStyle = {
     color: "#6e6142",
     textAlign: "center"
 };
-
 const perkLabelStyle = {
     marginBottom: '0.45rem',
     fontWeight: 700,
     color: '#7a6b4f',
     fontSize: '1.05rem'
 };
-
 const errorStyle = {
     color: "#cf443e",
     fontWeight: 600,
     marginBottom: 10,
     textAlign: "center"
 };
-
 const buttonStyle = {
     background: "#e4c77b",
     color: "#21201a",
@@ -85,7 +63,6 @@ const buttonStyle = {
     marginBottom: 5,
     transition: "0.2s background, 0.2s box-shadow"
 };
-
 const inputStyle = {
     borderRadius: 12,
     fontWeight: 600,
@@ -95,20 +72,25 @@ const inputStyle = {
     padding: "11px 14px",
     marginBottom: 8
 };
-
-const centerColumnStyle = {
+const cardStyle = {
+    background: "linear-gradient(135deg, #f7f4ed 0%, #e4e0d1 100%)",
+    borderRadius: "32px",
+    boxShadow: "0 8px 40px #a3926a22",
+    padding: "32px 22px",
+    minWidth: 270,
+    maxWidth: 340,
+    width: "100%",
+    margin: "8px 0",
     display: "flex",
     flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 220,
-    margin: "0 26px"
+    alignItems: "center"
 };
 
 function Home() {
     const [username, setUsername] = useState('');
     const [error, setError] = useState('');
     const [gameId, setGameId] = useState('');
+    const [spectateGameId, setSpectateGameId] = useState('');
     const gameIdRef = useRef('');
     const [activePerk, setActivePerk] = useState('');
     const [passivePerks, setPassivePerks] = useState([]);
@@ -252,12 +234,21 @@ function Home() {
         });
     }
 
+    // pentru spectatori
+    const handleSpectateGame = () => {
+        if (!spectateGameId) {
+            setError("Game code is required for spectate");
+            return;
+        }
+        navigate(`/game/spectate/${spectateGameId}`);
+    }
+
     return (
         <div style={pageStyle}>
-            <div style={{display: "flex", flexDirection: "column", alignItems: "center", width: "100%"}}>
+            <div style={{width: "100%", maxWidth: 1000}}>
                 <div style={titleStyle}>♛ Chess <span style={{color:"#a18d4e"}}>V2</span></div>
                 <div style={subTitleStyle}>Play premium chess with perks</div>
-                <div className="mb-3" style={{width: "100%", maxWidth: 320}}>
+                <div className="mb-3" style={{width: "100%", maxWidth: 420, margin: "0 auto"}}>
                     <div style={perkLabelStyle}>Username</div>
                     <input
                         className="form-control"
@@ -302,34 +293,28 @@ function Home() {
                         )}
                     </div>
                 </div>
-                {/* Row with create and join cards */}
+
+                {/* Carduri pentru create/join/spectate responsive */}
                 <div
-                    className="mt-2"
+                    className="home-cards-responsive"
                     style={{
                         display: "flex",
-                        flexDirection: "row",
-                        alignItems: "flex-start",
+                        flexWrap: "wrap",
+                        gap: 28,
                         justifyContent: "center",
-                        width: "100%",
-                        gap: 32,
-                        marginTop: 10
+                        alignItems: "stretch",
+                        margin: "40px 0 0 0"
                     }}
                 >
-                    {/* Create game window */}
-                    <div style={mainCardStyle}>
+                    {/* Create game */}
+                    <div style={cardStyle}>
                         <h2 style={{fontWeight: 800, fontSize: '1.13rem', color: '#bfa14a', marginBottom: 16}}>Create game</h2>
                         <button style={buttonStyle} onClick={handleCreateGame}>
                             Create new game
                         </button>
                     </div>
-                    {/* Center column for spacing/visual divider */}
-                    <div style={centerColumnStyle}>
-                        <div style={{
-                            width: 1, background: "#e6dec3", minHeight: 105, margin: "0 0"
-                        }}/>
-                    </div>
-                    {/* Join game window */}
-                    <div style={mainCardStyle}>
+                    {/* Join game */}
+                    <div style={cardStyle}>
                         <h2 style={{fontWeight: 800, fontSize: '1.13rem', color: '#bfa14a', marginBottom: 16}}>Join with code</h2>
                         <input
                             className="form-control"
@@ -342,8 +327,30 @@ function Home() {
                         />
                         <button style={buttonStyle} onClick={handleJoinGame}>Join</button>
                     </div>
+                    {/* Spectate game */}
+                    <div style={cardStyle}>
+                        <h2 style={{fontWeight: 800, fontSize: '1.13rem', color: '#bfa14a', marginBottom: 16}}>Spectate game</h2>
+                        <input
+                            className="form-control"
+                            style={{...inputStyle, marginBottom: 11}}
+                            autoComplete="Game code"
+                            aria-required="true"
+                            placeholder="Game code"
+                            value={spectateGameId}
+                            onChange={(e) => setSpectateGameId(e.target.value)}
+                        />
+                        <button style={buttonStyle} onClick={handleSpectateGame}>Spectate</button>
+                    </div>
                 </div>
             </div>
+            <style>{`
+                @media (max-width: 900px) {
+                  .home-cards-responsive {
+                    flex-direction: column;
+                    align-items: stretch;
+                  }
+                }
+            `}</style>
         </div>
     );
 }

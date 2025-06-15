@@ -1,4 +1,6 @@
-﻿import React from "react";
+﻿import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import React from "react";
 
 const overlayStyle = {
     position: "fixed",
@@ -50,35 +52,72 @@ const btnStyle = {
     transition: "0.2s background, 0.2s box-shadow"
 };
 
-export default function GameOver({ winner, reason, onRematch, onExit }) {
-    // winner: username sau "Draw"
-    // reason: "Time", "Checkmate", "Resignation" etc.
+function GameOver() {
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    const { winner, endType: reason, whiteUsername, blackUsername } = location.state || {};
+
+    useEffect(() => {
+        if (!location.state || Object.keys(location.state).length === 0) {
+            navigate("/");
+        }
+    }, [location.state, navigate]);
+
+    if (!location.state || Object.keys(location.state).length === 0) return null;
+
+    const formattedReason = reason
+        ? reason.charAt(0).toUpperCase() + reason.slice(1).toLowerCase()
+        : "";
 
     let title, subtitle, emoji;
-    if (winner === "Draw") {
-        title = "Remiză";
-        subtitle = "Jocul s-a terminat la egalitate.";
+
+    if (!winner || winner.toLowerCase() === "null") {
+        title = "Remiză 🤝";
+        subtitle = "Jocul s-a încheiat la egalitate.";
         emoji = "🤝";
     } else {
-        title = `Victoria lui ${winner}!`;
-        switch (reason) {
+        const winnerUsername = winner === "White" ? whiteUsername : blackUsername;
+        title = `Victoria lui ${winnerUsername}!`;
+
+        switch (formattedReason) {
             case "Checkmate":
-                subtitle = "Mat! Ai câștigat partida.";
+                subtitle = "Mat!.";
                 emoji = "♛";
                 break;
-            case "Time":
-                subtitle = "Timpul adversarului a expirat.";
+            case "Timeout":
+                subtitle = "Timpul a expirat.";
                 emoji = "⏰";
                 break;
-            case "Resignation":
+            case "Resigned":
                 subtitle = "Adversarul a cedat.";
                 emoji = "🏳️";
+                break;
+            case "Stalemate":
+                subtitle = "PAT! Nimeni nu a mai putut face mutări.";
+                emoji = "🤷‍♂️";
+                break;
+            case "Repetition":
+                subtitle = "Remiză prin repetarea poziției.";
+                emoji = "🔁";
+                break;
+            case "DrawDeclared":
+                subtitle = "Remiză declarată de ambii jucători.";
+                emoji = "🤝";
                 break;
             default:
                 subtitle = "Felicitări!";
                 emoji = "🏆";
         }
     }
+
+    const handleRematch = () => {
+        navigate("/"); 
+    };
+
+    const handleExit = () => {
+        navigate("/");
+    };
 
     return (
         <div style={overlayStyle}>
@@ -88,14 +127,13 @@ export default function GameOver({ winner, reason, onRematch, onExit }) {
                 </div>
                 <div style={subtitleStyle}>{subtitle}</div>
                 <div>
-                    <button style={btnStyle} onClick={onRematch}>
+                    <button style={btnStyle} onClick={handleRematch}>
                         Joacă din nou
-                    </button>
-                    <button style={{...btnStyle, background: "#eedba3"}} onClick={onExit}>
-                        Ieși
                     </button>
                 </div>
             </div>
         </div>
     );
 }
+
+export default GameOver;

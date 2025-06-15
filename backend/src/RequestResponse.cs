@@ -1,4 +1,6 @@
-﻿public class CreateGameRequest
+﻿using Chess;
+
+public class CreateGameRequest
 {
     public string Username { get; set; }
     public string LayoutPerk { get; set; } // "3bishops" sau "3knights" sau ""

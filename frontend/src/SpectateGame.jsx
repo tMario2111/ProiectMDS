@@ -1,14 +1,10 @@
 ﻿import {useEffect, useRef, useState} from 'react'
-import './Game.css'
-
-import {BLACK, Chess, WHITE} from "chess.js";
+import {useParams} from "react-router-dom"
+import {Chess, BLACK, WHITE} from "chess.js";
 import {Chessboard} from "react-chessboard";
-import {useNavigate, useParams} from "react-router-dom";
-import {getConnection, getUsername, registerHandler} from "./connection.js";
+import {getConnection, registerHandler, startConnection} from "./connection.js";
 import Clock from "./components/Clock.jsx";
-import GameOver from './GameEnded.jsx'
 
-// ---- ChatBox component ----
 function ChatBox({gameId, username}) {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
@@ -97,9 +93,7 @@ function ChatBox({gameId, username}) {
         </div>
     );
 }
-// ---- End ChatBox ----
 
-// Stiluri premium cu chat pe dreapta
 const boardContainerStyle = {
     background: 'linear-gradient(135deg, #f7f4ed 0%, #e4e0d1 100%)',
     borderRadius: '32px',
@@ -149,136 +143,87 @@ const accentStyle = {
     color: '#bfa14a'
 };
 
-function Game() {
-    const initialFen = window._customFen;
-    const [game, setGame] = useState(initialFen ? new Chess(initialFen) : new Chess());
+function SpectateGame() {
+    const { code } = useParams();
 
-    const {code} = useParams();
-    const navigate = useNavigate();
-
+    const [game, setGame] = useState(new Chess());
     const [whiteUsername, setWhiteUsername] = useState('');
     const [blackUsername, setBlackUsername] = useState('');
+    const [whiteTime, setWhiteTime] = useState(180000); // ms
+    const [blackTime, setBlackTime] = useState(180000); // ms
 
-    const color = useRef('');
-
-    const selfClock = useRef();
-    const opponentClock = useRef();
+    const whiteClock = useRef();
+    const blackClock = useRef();
 
     useEffect(() => {
-        const fetchGame = async () => {
-            try {
-                const response =
-                    await fetch(`https://localhost:7008/api/get-game?gameCode=${encodeURIComponent(code)}`);
+        let initialReceived = false;
 
-                if (!response.ok) {
-                    console.error(response);
-                    return;
-                }
+        (async () => {
+            await startConnection();
+            const connection = getConnection();
+            await connection.invoke("JoinAsSpectator", code);
+        })();
 
-                const data = await response.json();
-                setWhiteUsername(data['whiteUsername']);
-                setBlackUsername(data['blackUsername']);
+        // Primește starea inițială a jocului
+        const cleanupSync = registerHandler("SpectatorSync", (payload) => {
+            setGame(new Chess(payload.fen));
+            setWhiteUsername(payload.whiteUsername);
+            setBlackUsername(payload.blackUsername);
+            setWhiteTime(payload.whiteTime);
+            setBlackTime(payload.blackTime);
 
-                if (getUsername() === data['whiteUsername'])
-                    color.current = WHITE;
-                else
-                    color.current = BLACK;
-
-                if (color.current === BLACK)
-                    opponentClock.current.resume();
-                else
-                    selfClock.current.resume();
-
-            } catch (error) {
-                console.error(error)
-            }
-        }
-
-        fetchGame();
-
-        const cleanup = registerHandler("GetMove", (move) => {
-            // If the current player made the move
-            if (move["color"] === 'white' && color.current === WHITE ||
-                move["color"] === 'black' && color.current === BLACK) {
-                selfClock.current.stop();
-                selfClock.current.setRemainingTime(move["time"]);
-                opponentClock.current.resume();
+            if (whiteClock.current) whiteClock.current.setRemainingTime(payload.whiteTime);
+            if (blackClock.current) blackClock.current.setRemainingTime(payload.blackTime);
+            // Pornește ceasul jucătorului la mutare
+            if (game.turn() === WHITE) {
+                if (whiteClock.current) whiteClock.current.resume();
             } else {
-                opponentClock.current.stop();
-                opponentClock.current.setRemainingTime(move["time"]);
-                selfClock.current.resume();
+                if (blackClock.current) blackClock.current.resume();
             }
-
-            if (move["color"] === 'white' && color.current === WHITE)
-                return;
-            if (move["color"] === 'black' && color.current === BLACK)
-                return;
-
-            if (move["promotion"] == null) {
-                makeAMove({
-                    from: move["sourceSquare"],
-                    to: move["destinationSquare"],
-                });
-            } else {
-                makeAMove({
-                    from: move["sourceSquare"],
-                    to: move["destinationSquare"],
-                    promotion: move["promotion"].toLowerCase(),
-                })
-            }
+            initialReceived = true;
         });
 
-        const cleanupGameOver = registerHandler("GameOver", (payload) => {
-            console.log("GameOver payload:", payload);
-            navigate("/game/end", { state: payload });
+        // Spectatorul primeste mutarile live
+        const cleanupMove = registerHandler("GetMove", (move) => {
+            if (!initialReceived) return;
+            // Actualizeaza tabla
+            setGame(prev => {
+                const gameCopy = new Chess(prev.fen());
+                if (move.promotion == null) {
+                    gameCopy.move({
+                        from: move.sourceSquare,
+                        to: move.destinationSquare,
+                    });
+                } else {
+                    gameCopy.move({
+                        from: move.sourceSquare,
+                        to: move.destinationSquare,
+                        promotion: move.promotion.toLowerCase(),
+                    });
+                }
+                return gameCopy;
+            });
+            // Actualizează ceasurile
+            if (move.color === 'white') {
+                if (whiteClock.current) whiteClock.current.stop();
+                if (whiteClock.current) whiteClock.current.setRemainingTime(move.time);
+                if (blackClock.current) blackClock.current.resume();
+                setWhiteTime(move.time);
+            } else {
+                if (blackClock.current) blackClock.current.stop();
+                if (blackClock.current) blackClock.current.setRemainingTime(move.time);
+                if (whiteClock.current) whiteClock.current.resume();
+                setBlackTime(move.time);
+            }
         });
 
         return () => {
-            cleanup();
-            cleanupGameOver();
+            cleanupSync();
+            cleanupMove();
         }
     }, [code]);
 
-    function makeAMove(move) {
-        const gameCopy = {...game};
-        const result = gameCopy.move(move);
-        setGame(gameCopy);
-        return result;
-    }
-
-    function onDrop(sourceSquare, targetSquare, piece) {
-        if (game.turn() !== color.current)
-            return false;
-
-        let promotion = null;
-        if (game.get(sourceSquare).type !== piece[1].toLowerCase()) {
-            promotion = piece[1].toUpperCase() ?? "Q";
-        }
-
-        const move = makeAMove({
-            from: sourceSquare,
-            to: targetSquare,
-            promotion: piece[1].toLowerCase() ?? "q",
-        });
-
-        if (move !== null) {
-            const connection = getConnection();
-            connection.invoke("MakeMove", {
-                GameCode: code,
-                SourceSquare: sourceSquare,
-                DestinationSquare: targetSquare,
-                Promotion: promotion,
-            });
-        }
-
-        return move !== null;
-    }
-
-    // Determină ce nume se află în stânga și în dreapta
-    const isWhite = color.current === WHITE;
-    const leftName = isWhite ? (blackUsername || '...') : (whiteUsername || '...');
-    const rightName = getUsername();
-    
+    // Spectatorul vede mereu tabla din perspectiva albului
     return (
         <div style={pageStyle}>
             <div
@@ -298,11 +243,11 @@ function Game() {
                     alignItems: 'center',
                     gap: 36
                 }}>
-                    {/* Stânga */}
+                    {/*Stanga*/}
                     <div style={sideColumnStyle}>
-                        <span style={playerNameStyle}>{leftName}</span>
+                        <span style={playerNameStyle}>{blackUsername || '...'}</span>
                         <div style={clockBoxStyle}>
-                            <Clock ref={opponentClock} timeLimit={180}/>
+                            <Clock ref={blackClock} timeLimit={180}/>
                         </div>
                     </div>
                     {/* Tabla */}
@@ -310,9 +255,8 @@ function Game() {
                         <Chessboard
                             boardWidth={480}
                             position={game.fen()}
-                            onPieceDrop={onDrop}
-                            snapToCursor={true}
-                            boardOrientation={isWhite ? 'white' : 'black'}
+                            boardOrientation="white"
+                            arePiecesDraggable={false}
                             customDarkSquareStyle={{backgroundColor: "#d7bb75"}}
                             customLightSquareStyle={{backgroundColor: "#f7f2e3"}}
                             animationDuration={180}
@@ -320,24 +264,24 @@ function Game() {
                     </div>
                     {/* Dreapta */}
                     <div style={sideColumnStyle}>
-                        <span style={playerNameStyle}>{rightName}</span>
+                        <span style={playerNameStyle}>{whiteUsername || '...'}</span>
                         <div style={clockBoxStyle}>
-                            <Clock ref={selfClock} timeLimit={180}/>
+                            <Clock ref={whiteClock} timeLimit={180}/>
                         </div>
                     </div>
                 </div>
                 {/* Chat-ul*/}
                 <div style={{marginLeft: 10}}>
-                    <ChatBox gameId={code} username={getUsername()}/>
+                    <ChatBox gameId={code} username={"Spectator"} />
                 </div>
             </div>
             <div style={{marginTop: 36, textAlign: 'center'}}>
                 <span style={{...playerNameStyle, fontSize: '1.9rem', ...accentStyle}}>
-                    Chess<span style={{color: '#a18d4e'}}> V2</span>
+                    <span style={{color: '#a18d4e'}}> Spectate</span>
                 </span>
             </div>
         </div>
     );
 }
 
-export default Game;
+export default SpectateGame;
